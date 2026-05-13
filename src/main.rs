@@ -1,6 +1,8 @@
+use anyhow::Result;
 use chess::{board::Board, peice::PieceKind};
 
-fn main() {
+#[tokio::main]
+async fn main() -> Result<()> {
     println!("Chess");
 
     let init_pos_white = vec![
@@ -54,7 +56,15 @@ fn main() {
 
     //board.white.move(Coord("e", 5));
 
+    let playing = true;
+
     //while playing {
-    board.draw(8);
+    //    //board.draw(8);
+
+    //    board.wait_for_black().await?;
     //}
+    board.wait_for_black().await?;
+    //board.wait_for_white().await?;
+
+    Ok(())
 }

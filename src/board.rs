@@ -1,3 +1,11 @@
+use std::{io::stdout, process::Stdio};
+
+use anyhow::Result;
+use tokio::{
+    io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader, stdin},
+    process::Command,
+};
+
 use crate::{
     peice::{Color, PieceData, PieceKind, print_piece},
     player::Player,
@@ -60,7 +68,7 @@ impl Board {
     }
 
     pub fn draw(&self, pxs_per_square: usize) {
-        //print!("\x1B[2J\x1B[1;1H");
+        print!("\x1B[2J\x1B[1;1H");
         println!();
         //println!("\x1b[38;5;137m█\x1b[0m");
         //println!("\x1b[48;2;92;64;51m\x1b[30m  ASCII ART  \x1b[0m");
@@ -108,5 +116,54 @@ impl Board {
         }
 
         println!()
+    }
+
+    pub async fn wait_for_white(&mut self) -> Result<()> {
+        //tokio::spawn(async move {
+        //    let mut stdout = stdout();
+
+        //    let res = stdout
+        //        .write(b"\x1b[6n")
+        //        .await
+        //        .expect("Failed to write to stdout");
+        //    print!("{}", res);
+        //});
+        let mut stdout = stdout().into_raw().unwrap();
+        let mut stdin = stdin();
+
+        let res = stdout
+            .write(b"\x1b[6n")
+            .await
+            .expect("Failed to write to stdout");
+        print!("'{}' ", res);
+
+        let mut buf = vec![];
+        let res = stdin
+            .read(&mut buf)
+            .await
+            .expect("Failed to write to stdout");
+
+        print!("r: {}, Buf: {:?}", res, buf);
+        Ok(())
+    }
+    pub async fn wait_for_black(&mut self) -> Result<()> {
+        let mut child = Command::new("bash")
+            .arg("-c")
+            .arg("echo 'Status: Start'; sleep 1; echo 'Status: End'")
+            .stdout(Stdio::piped())
+            .spawn()
+            .expect("Failed to spawn");
+
+        let stdout = child.stdout.take().expect("Failed to capture stdout");
+        let reader = BufReader::new(stdout);
+
+        let mut lines = reader.lines();
+
+        while let Some(line) = lines.next_line().await? {
+            println!("length = {}", line)
+        }
+
+        child.wait().await.expect("Failed to wait");
+        Ok(())
     }
 }
